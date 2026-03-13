@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — What You Missed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f4f0e8;
+    --cream: #ede8db;
+    --red: #c0392b;
+    --green: #1e8449;
+    --gray: #6b6b6b;
+    --light-gray: #d4cfc5;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'IBM Plex Serif', Georgia, serif;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 20px;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-style: italic;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 3px solid var(--ink);
+  }
+
+  .field {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 8px;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    border: 1px solid var(--light-gray);
+    background: white;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input:focus { border-color: var(--ink); }
+
+  .hint {
+    font-size: 10px;
+    color: var(--gray);
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+
+  .hint a { color: var(--red); text-decoration: none; }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.15s;
+  }
+
+  .btn:hover { background: var(--red); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn:disabled:hover { background: var(--ink); }
+
+  .status-box {
+    margin-top: 24px;
+    padding: 16px 20px;
+    font-size: 12px;
+    line-height: 1.7;
+    display: none;
+    border-left: 3px solid;
+  }
+
+  .status-box.success {
+    display: block;
+    border-color: var(--green);
+    background: #eafaf1;
+    color: #1a5e36;
+  }
+
+  .status-box.error {
+    display: block;
+    border-color: var(--red);
+    background: #fdf3f2;
+    color: #7b241c;
+  }
+
+  .status-box.info {
+    display: block;
+    border-color: #2471a3;
+    background: #eaf4fb;
+    color: #1a4a6b;
+  }
+
+  .log {
+    margin-top: 24px;
+    background: var(--ink);
+    color: #a8d8a8;
+    padding: 20px;
+    font-size: 11px;
+    line-height: 1.8;
+    display: none;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .log.visible { display: block; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--light-gray);
+    margin: 32px 0;
+  }
+
+  .run-list {
+    font-size: 11px;
+    line-height: 1.8;
+    color: var(--gray);
+  }
+
+  .run-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--light-gray);
+    gap: 12px;
+  }
+
+  .run-status {
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .run-status.success { color: var(--green); }
+  .run-status.failure { color: var(--red); }
+  .run-status.in_progress { color: #2471a3; }
+  .run-status.queued { color: #7d6608; }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 12px;
+  }
+
+  .back-link {
+    display: block;
+    text-align: center;
+    margin-top: 40px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--gray);
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .back-link:hover { color: var(--ink); }
+
+  .remember-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .remember-row input[type=checkbox] { width: auto; }
+  .remember-row label { margin: 0; font-size: 10px; letter-spacing: 0.1em; color: var(--gray); text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="title">What You Missed</div>
+  <h1>Admin Panel</h1>
+
+  <div class="field">
+    <label>GitHub Username</label>
+    <input type="text" id="ghUser" placeholder="your-github-username" autocomplete="off">
+  </div>
+
+  <div class="field">
+    <label>Repository Name</label>
+    <input type="text" id="ghRepo" placeholder="whatfoxmissed3" autocomplete="off">
+  </div>
+
+  <div class="field">
+    <label>Personal Access Token</label>
+    <input type="password" id="ghToken" placeholder="github_pat_..." autocomplete="off">
+    <div class="hint">
+      Create one at <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a>
+      → Fine-grained token → select your repo → grant <strong>Actions: Read and Write</strong> permission.
+      Token never leaves your browser.
+    </div>
+  </div>
+
+  <div class="remember-row">
+    <input type="checkbox" id="rememberMe">
+    <label for="rememberMe">Remember username &amp; repo (not token) in this browser</label>
+  </div>
+
+  <button class="btn" id="triggerBtn" onclick="triggerWorkflow()">▶ Run Analysis Now</button>
+  <button class="btn" id="checkBtn" onclick="checkStatus()" style="background:#444; margin-top:8px">↻ Check Workflow Status</button>
+
+  <div class="status-box" id="statusBox"></div>
+  <div class="log" id="logBox"></div>
+
+  <hr class="divider">
+
+  <div class="section-label">Recent Workflow Runs</div>
+  <div class="run-list" id="runList">
+    <div style="color:var(--gray);font-size:11px">Enter your details above and click "Check Workflow Status"</div>
+  </div>
+
+  <a href="index.html" class="back-link">← Back to site</a>
+</div>
+
+<script>
+  // Load remembered values
+  const remembered = JSON.parse(localStorage.getItem('wfm_admin') || '{}');
+  if (remembered.user) document.getElementById('ghUser').value = remembered.user;
+  if (remembered.repo) document.getElementById('ghRepo').value = remembered.repo;
+  if (remembered.user || remembered.repo) document.getElementById('rememberMe').checked = true;
+
+  function getFields() {
+    return {
+      user: document.getElementById('ghUser').value.trim(),
+      repo: document.getElementById('ghRepo').value.trim(),
+      token: document.getElementById('ghToken').value.trim(),
+    };
+  }
+
+  function showStatus(type, msg) {
+    const box = document.getElementById('statusBox');
+    box.className = 'status-box ' + type;
+    box.innerHTML = msg;
+    box.style.display = 'block';
+  }
+
+  function log(msg) {
+    const box = document.getElementById('logBox');
+    box.classList.add('visible');
+    box.textContent += msg + '\n';
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function clearLog() {
+    const box = document.getElementById('logBox');
+    box.textContent = '';
+    box.classList.remove('visible');
+  }
+
+  async function triggerWorkflow() {
+    const { user, repo, token } = getFields();
+    clearLog();
+
+    if (!user || !repo || !token) {
+      showStatus('error', 'Please fill in all three fields.');
+      return;
+    }
+
+    if (document.getElementById('rememberMe').checked) {
+      localStorage.setItem('wfm_admin', JSON.stringify({ user, repo }));
+    }
+
+    const btn = document.getElementById('triggerBtn');
+    btn.disabled = true;
+    showStatus('info', 'Triggering workflow...');
+    log(`[${new Date().toLocaleTimeString()}] Dispatching workflow to ${user}/${repo}...`);
+
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${user}/${repo}/actions/workflows/daily-analysis.yml/dispatches`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ref: 'main' }),
+        }
+      );
+
+      if (res.status === 204) {
+        log(`[${new Date().toLocaleTimeString()}] ✓ Workflow triggered successfully`);
+        log(`[${new Date().toLocaleTimeString()}] Waiting for run to appear...`);
+        showStatus('success', '✓ Workflow triggered! It takes 3–5 minutes to complete.<br>Click <strong>Check Workflow Status</strong> to monitor progress.');
+        
+        // Auto-check status after 5 seconds
+        setTimeout(() => checkStatus(), 5000);
+      } else {
+        const body = await res.json().catch(() => ({}));
+        const msg = body.message || `HTTP ${res.status}`;
+        log(`[${new Date().toLocaleTimeString()}] ✗ Error: ${msg}`);
+        showStatus('error', `Error ${res.status}: ${msg}<br><br>
+          Common causes:<br>
+          • Token doesn't have Actions write permission<br>
+          • Wrong username or repo name<br>
+          • Workflow file is named differently`);
+      }
+    } catch (err) {
+      log(`[${new Date().toLocaleTimeString()}] ✗ Network error: ${err.message}`);
+      showStatus('error', `Network error: ${err.message}`);
+    }
+
+    btn.disabled = false;
+  }
+
+  async function checkStatus() {
+    const { user, repo, token } = getFields();
+
+    if (!user || !repo || !token) {
+      showStatus('error', 'Please fill in all three fields.');
+      return;
+    }
+
+    const btn = document.getElementById('checkBtn');
+    btn.disabled = true;
+    btn.textContent = '↻ Checking...';
+
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${user}/${repo}/actions/workflows/daily-analysis.yml/runs?per_page=5`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          }
+        }
+      );
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        showStatus('error', `Could not fetch runs: ${body.message || res.status}`);
+        return;
+      }
+
+      const data = await res.json();
+      const runs = data.workflow_runs || [];
+      const runList = document.getElementById('runList');
+
+      if (runs.length === 0) {
+        runList.innerHTML = '<div style="color:var(--gray);font-size:11px">No runs found yet.</div>';
+        return;
+      }
+
+      runList.innerHTML = runs.map(run => {
+        const date = new Date(run.created_at).toLocaleString('en-US', {
+          month: 'short', day: 'numeric',
+          hour: 'numeric', minute: '2-digit'
+        });
+        const conclusion = run.conclusion || run.status;
+        const statusClass = run.conclusion === 'success' ? 'success'
+          : run.conclusion === 'failure' ? 'failure'
+          : run.status === 'in_progress' ? 'in_progress'
+          : 'queued';
+
+        return `<div class="run-item">
+          <span>${date}</span>
+          <span style="color:var(--gray);font-size:10px">${run.event}</span>
+          <span class="run-status ${statusClass}">${conclusion}</span>
+          <a href="${run.html_url}" target="_blank" style="color:var(--red);font-size:10px;text-decoration:none">logs →</a>
+        </div>`;
+      }).join('');
+
+      // If most recent run is in progress, auto-refresh in 15s
+      const latest = runs[0];
+      if (latest.status === 'in_progress' || latest.status === 'queued') {
+        showStatus('info', `⟳ Run is <strong>${latest.status}</strong> — auto-refreshing in 15 seconds...`);
+        setTimeout(() => checkStatus(), 15000);
+      } else if (latest.conclusion === 'success') {
+        showStatus('success', `✓ Latest run succeeded at ${new Date(latest.updated_at).toLocaleTimeString()}. <a href="index.html" style="color:var(--green)">View the site →</a>`);
+      } else if (latest.conclusion === 'failure') {
+        showStatus('error', `✗ Latest run failed. <a href="${latest.html_url}" target="_blank" style="color:var(--red)">View logs →</a>`);
+      }
+
+    } catch (err) {
+      showStatus('error', `Network error: ${err.message}`);
+    }
+
+    btn.disabled = false;
+    btn.textContent = '↻ Check Workflow Status';
+  }
+</script>
+</body>
+</html>
