@@ -1,101 +1,245 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { getTopStories, type TopStory } from "@/lib/getTopStories";
+import { getFoxComparison, type FoxComparison } from "@/lib/getFoxComparison";
+import Scorecard, { type DailySummary } from "@/components/Scorecard";
+import StoryCard from "@/components/StoryCard";
+
+type StoryWithFox = TopStory & { fox: FoxComparison };
+
+type Phase = "idle" | "fetching-stories" | "analyzing" | "done" | "error";
+
+function computeSummary(stories: StoryWithFox[]): DailySummary {
+  const scores = stories.map((s) => s.fox.severity_score);
+  const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  const critical = stories.filter(
+    (s) => s.fox.omission_severity === "CRITICAL"
+  ).length;
+  const high = stories.filter(
+    (s) => s.fox.omission_severity === "HIGH"
+  ).length;
+  const notCovered = stories.filter((s) => !s.fox.fox_covered).length;
+
+  let grade: string;
+  if (avg >= 75) grade = "F";
+  else if (avg >= 60) grade = "D";
+  else if (avg >= 40) grade = "C";
+  else if (avg >= 20) grade = "B";
+  else grade = "A";
+
+  return {
+    average_severity_score: avg,
+    critical_omissions: critical,
+    high_omissions: high,
+    stories_not_covered: notCovered,
+    overall_grade: grade,
+    summary_text: `Analysis of ${stories.length} top wire-service stories. ${notCovered} not covered by Fox News. ${critical} critical and ${high} high-severity omissions detected.`,
+  };
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [stories, setStories] = useState<TopStory[]>([]);
+  const [completed, setCompleted] = useState<StoryWithFox[]>([]);
+  const [analyzingIndex, setAnalyzingIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const dateDisplay = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "America/New_York",
+  });
+
+  async function runAnalysis() {
+    setPhase("fetching-stories");
+    setStories([]);
+    setCompleted([]);
+    setAnalyzingIndex(0);
+    setError(null);
+
+    try {
+      const topStories = await getTopStories();
+      setStories(topStories);
+      setPhase("analyzing");
+
+      const results: StoryWithFox[] = [];
+      for (let i = 0; i < topStories.length; i++) {
+        setAnalyzingIndex(i);
+        const fox = await getFoxComparison(topStories[i]);
+        const storyWithFox = { ...topStories[i], fox };
+        results.push(storyWithFox);
+        setCompleted([...results]);
+      }
+
+      setPhase("done");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
+      setPhase("error");
+    }
+  }
+
+  const totalStories = stories.length || 5;
+  const progress =
+    phase === "fetching-stories"
+      ? 0
+      : phase === "analyzing"
+        ? Math.round((completed.length / totalStories) * 100)
+        : phase === "done"
+          ? 100
+          : 0;
+
+  return (
+    <div className="min-h-screen bg-background text-foreground font-[family-name:var(--font-geist-sans)]">
+      <div className="max-w-3xl mx-auto px-4 py-12 sm:px-6">
+        {/* Header */}
+        <header className="mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
+            What Fox Missed
+          </h1>
+          <p className="text-sm text-foreground/60">
+            Daily media literacy report &mdash; comparing wire-service headlines
+            to Fox News coverage.
+          </p>
+        </header>
+
+        {/* Analyze button */}
+        {phase === "idle" && (
+          <button
+            onClick={runAnalysis}
+            className="rounded-lg bg-foreground text-background px-6 py-3 text-sm font-semibold hover:opacity-90 transition-opacity"
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            Analyze Today&apos;s News
+          </button>
+        )}
+
+        {/* Progress indicator */}
+        {(phase === "fetching-stories" || phase === "analyzing") && (
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-2 flex-1 rounded-full bg-foreground/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-foreground/70 transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="text-xs font-mono text-foreground/50 shrink-0">
+                {completed.length}/{stories.length || "?"}
+              </span>
+            </div>
+
+            <p className="text-sm text-foreground/60">
+              {phase === "fetching-stories" && (
+                <>
+                  <span className="inline-block animate-pulse mr-2">●</span>
+                  Fetching top stories from AP &amp; Reuters&hellip;
+                </>
+              )}
+              {phase === "analyzing" && (
+                <>
+                  <span className="inline-block animate-pulse mr-2">●</span>
+                  Analyzing Fox News coverage of story {analyzingIndex + 1} of{" "}
+                  {stories.length}&hellip;
+                </>
+              )}
+            </p>
+
+            {/* Per-story loading states */}
+            {stories.length > 0 && (
+              <ul className="mt-4 space-y-2">
+                {stories.map((s, i) => {
+                  const isDone = i < completed.length;
+                  const isActive =
+                    i === analyzingIndex && phase === "analyzing";
+                  return (
+                    <li
+                      key={i}
+                      className={`text-sm flex items-center gap-2 ${
+                        isDone
+                          ? "text-foreground/70"
+                          : isActive
+                            ? "text-foreground"
+                            : "text-foreground/30"
+                      }`}
+                    >
+                      {isDone ? (
+                        <span className="text-green-500 shrink-0">✓</span>
+                      ) : isActive ? (
+                        <span className="animate-spin text-xs shrink-0">
+                          ⟳
+                        </span>
+                      ) : (
+                        <span className="text-foreground/20 shrink-0">○</span>
+                      )}
+                      <span className="truncate">{s.headline}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Error state */}
+        {phase === "error" && (
+          <div className="border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg p-6 mb-10">
+            <h2 className="text-sm font-bold text-red-700 dark:text-red-400 mb-2">
+              Analysis Failed
+            </h2>
+            <p className="text-sm text-red-600 dark:text-red-300 mb-4">
+              {error}
+            </p>
+            <button
+              onClick={runAnalysis}
+              className="rounded-lg border border-red-300 dark:border-red-700 px-4 py-2 text-sm font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Completed story cards shown progressively during analysis */}
+        {phase === "analyzing" && completed.length > 0 && (
+          <div className="mt-8 space-y-2">
+            {completed.map((story, i) => (
+              <StoryCard key={i} story={story} />
+            ))}
+          </div>
+        )}
+
+        {/* Final results */}
+        {phase === "done" && completed.length > 0 && (
+          <>
+            <Scorecard
+              summary={computeSummary(completed)}
+              dateDisplay={dateDisplay}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            <div className="space-y-2">
+              {completed.map((story, i) => (
+                <StoryCard key={i} story={story} />
+              ))}
+            </div>
+            <div className="mt-10 pt-6 border-t border-foreground/10">
+              <button
+                onClick={runAnalysis}
+                className="rounded-lg border border-foreground/20 px-4 py-2 text-sm text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors"
+              >
+                Run Again
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Footer */}
+        <footer className="mt-16 pt-6 border-t border-foreground/10 text-xs text-foreground/40">
+          Powered by Claude &amp; web search. Stories sourced from AP News and
+          Reuters wire services.
+        </footer>
+      </div>
     </div>
   );
 }
