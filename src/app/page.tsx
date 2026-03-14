@@ -8,7 +8,7 @@ import StoryCard from "@/components/StoryCard";
 
 type StoryWithFox = TopStory & { fox: FoxComparison };
 
-type Phase = "idle" | "fetching-stories" | "analyzing" | "done" | "error";
+type Phase = "idle" | "checking-cache" | "fetching-stories" | "analyzing" | "done" | "error";
 
 function computeSummary(stories: StoryWithFox[]): DailySummary {
   const scores = stories.map((s) => s.fox.severity_score);
@@ -44,6 +44,7 @@ export default function Home() {
   const [completed, setCompleted] = useState<StoryWithFox[]>([]);
   const [analyzingIndex, setAnalyzingIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
 
   const dateDisplay = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -53,14 +54,32 @@ export default function Home() {
     timeZone: "America/New_York",
   });
 
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+
   async function runAnalysis() {
-    setPhase("fetching-stories");
+    setPhase("checking-cache");
     setStories([]);
     setCompleted([]);
     setAnalyzingIndex(0);
     setError(null);
+    setFromCache(false);
 
     try {
+      // Check server-side cache first
+      const cacheRes = await fetch(`${API_URL}/api/analysis-cache`);
+      if (cacheRes.ok) {
+        const cached: StoryWithFox[] = await cacheRes.json();
+        if (Array.isArray(cached) && cached.length > 0) {
+          setStories(cached);
+          setCompleted(cached);
+          setFromCache(true);
+          setPhase("done");
+          return;
+        }
+      }
+
+      setPhase("fetching-stories");
       const topStories = await getTopStories();
       setStories(topStories);
       setPhase("analyzing");
@@ -73,6 +92,13 @@ export default function Home() {
         results.push(storyWithFox);
         setCompleted([...results]);
       }
+
+      // Store results in server-side cache
+      await fetch(`${API_URL}/api/analysis-cache`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(results),
+      });
 
       setPhase("done");
     } catch (err) {
@@ -118,6 +144,12 @@ export default function Home() {
         )}
 
         {/* Progress indicator */}
+        {phase === "checking-cache" && (
+          <p className="text-sm text-foreground/60 mb-10">
+            <span className="inline-block animate-pulse mr-2">●</span>
+            Checking for cached results&hellip;
+          </p>
+        )}
         {(phase === "fetching-stories" || phase === "analyzing") && (
           <div className="mb-10">
             <div className="flex items-center gap-3 mb-3">
@@ -214,6 +246,11 @@ export default function Home() {
         {/* Final results */}
         {phase === "done" && completed.length > 0 && (
           <>
+            {fromCache && (
+              <p className="text-xs text-foreground/40 mb-4">
+                Showing cached results from earlier today.
+              </p>
+            )}
             <Scorecard
               summary={computeSummary(completed)}
               dateDisplay={dateDisplay}
