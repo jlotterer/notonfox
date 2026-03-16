@@ -1,7 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 
-const client = new Anthropic();
+let client: Anthropic | undefined;
+
+function getClient(): Anthropic {
+  if (!client) {
+    client = new Anthropic();
+  }
+  return client;
+}
 
 export async function POST(request: NextRequest) {
   const { system, messages } = await request.json();
@@ -14,13 +21,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const response = await client.messages.create({
+    const response = await getClient().messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system,
       messages,
       tools: [
-        { type: "web_search_20250305", name: "web_search" } as unknown as Anthropic.Tool,
+        { type: "web_search_20250305", name: "web_search" },
       ],
     });
 
@@ -33,7 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
