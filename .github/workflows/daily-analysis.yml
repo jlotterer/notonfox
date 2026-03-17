@@ -2,7 +2,7 @@ name: Daily News Analysis
 
 on:
   schedule:
-    - cron: "0 13 * * *"
+    - cron: "0 0 * * *"  # Midnight UTC = 8 PM EDT / 7 PM EST
   workflow_dispatch:
 
 permissions:
@@ -37,14 +37,14 @@ jobs:
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add docs/data/
+          git add public/data/
           git diff --staged --quiet || git commit -m "chore: daily analysis $(date -u +'%Y-%m-%d')"
           git push
 
       - name: Print summary
         run: |
           node -e "
-          const d = JSON.parse(require('fs').readFileSync('docs/data/latest.json'));
+          const d = JSON.parse(require('fs').readFileSync('public/data/latest.json'));
           const s = d.daily_summary;
           console.log('Date:', d.date_display);
           console.log('Severity:', s.average_severity_score + '/100');
