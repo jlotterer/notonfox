@@ -58,58 +58,35 @@ export default function StoryCard({ story }: StoryCardProps) {
         {story.significance}
       </p>
 
-      {/* Two-column wire vs Fox coverage */}
-      <div className="grid gap-6 sm:grid-cols-2 mb-6">
-        {/* AP & Reuters */}
-        <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/50 border-b border-foreground/10 pb-1 mb-3">
-            AP &amp; Reuters
-          </h3>
-          <p className="text-sm leading-relaxed mb-2">
-            <span className="font-semibold">AP:</span> {story.ap_coverage}
+      {/* What Fox said */}
+      <div className="mb-5">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/50 border-b border-foreground/10 pb-1 mb-3">
+          What Fox Reported
+        </h3>
+        {fox.fox_covered ? (
+          <>
+            {fox.fox_headline && (
+              <p className="text-sm font-semibold mb-1">
+                &ldquo;{fox.fox_headline}&rdquo;
+              </p>
+            )}
+            <p className="text-sm leading-relaxed">{fox.what_fox_said}</p>
+          </>
+        ) : (
+          <p className="text-sm italic text-foreground/50">
+            Fox News did not cover this story or buried it.
           </p>
-          <p className="text-sm leading-relaxed">
-            <span className="font-semibold">Reuters:</span>{" "}
-            {story.reuters_coverage}
-          </p>
-        </div>
-
-        {/* Fox News */}
-        <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/50 border-b border-foreground/10 pb-1 mb-3">
-            Fox News
-          </h3>
-          {fox.fox_covered ? (
-            <>
-              {fox.fox_headline && (
-                <p className="text-sm font-semibold mb-1">
-                  &ldquo;{fox.fox_headline}&rdquo;
-                </p>
-              )}
-              <p className="text-sm leading-relaxed">{fox.fox_summary}</p>
-            </>
-          ) : (
-            <p className="text-sm italic text-foreground/50">
-              Not covered or not prominently featured.
-            </p>
-          )}
-          {fox.added_spin && (
-            <p className="mt-2 text-sm text-foreground/70">
-              <span className="font-semibold">Added spin:</span>{" "}
-              {fox.added_spin}
-            </p>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Missing context */}
-      {fox.missing_context.length > 0 && (
+      {/* What Fox missed */}
+      {fox.what_fox_missed.length > 0 && (
         <div className="bg-foreground/[.03] dark:bg-foreground/[.06] border border-foreground/10 rounded-md p-4 mb-5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/50 mb-2">
-            Missing Context
+            What Fox Left Out
           </h3>
           <ul className="space-y-1.5">
-            {fox.missing_context.map((item, i) => (
+            {fox.what_fox_missed.map((item, i) => (
               <li key={i} className="flex gap-2 text-sm leading-relaxed">
                 <span className="mt-1 shrink-0 h-1.5 w-1.5 rounded-full bg-foreground/30" />
                 {item}
@@ -119,7 +96,7 @@ export default function StoryCard({ story }: StoryCardProps) {
         </div>
       )}
 
-      {/* Severity score bar + analysis */}
+      {/* Why it matters + severity */}
       <div className="flex items-start gap-4">
         <div className="shrink-0 w-14 text-center">
           <div className="text-2xl font-bold leading-none">
@@ -138,7 +115,10 @@ export default function StoryCard({ story }: StoryCardProps) {
           </div>
         </div>
         <div className="min-w-0">
-          <p className="text-sm leading-relaxed">{fox.analysis}</p>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/50 mb-1.5">
+            Why It Matters
+          </h3>
+          <p className="text-sm leading-relaxed">{fox.why_it_matters}</p>
           <p className="mt-1 text-xs text-foreground/40 italic">
             {fox.severity_rationale}
           </p>

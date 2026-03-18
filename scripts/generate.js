@@ -99,21 +99,20 @@ async function getTopStories() {
   log("Step 1: Fetching top stories from AP and Reuters...");
 
   const systemPrompt = `You are a journalism analyst. Today is ${today}.
-Search the web for today's top breaking news from AP News and Reuters wire services.
+Search the web for today's top breaking news from major wire services and news outlets.
 Return ONLY a raw JSON array with no markdown fences, no explanation, no preamble.
 Return exactly 5 objects with this shape:
 [
   {
     "headline": "Full descriptive headline",
     "topic": "Single keyword category (e.g. immigration, economy, ukraine, healthcare, climate)",
-    "summary": "2-3 sentence factual summary of what happened",
-    "ap_coverage": "What the AP reported specifically — key facts, quotes, framing",
-    "reuters_coverage": "What Reuters reported specifically — any differences in emphasis or detail",
-    "significance": "One sentence on why this story matters"
+    "summary": "2-3 sentence plain-language summary of what happened, written so a high school student could understand it",
+    "significance": "One sentence on why this story matters to everyday people"
   }
 ]
 Focus on major national/international stories: politics, economy, foreign policy, justice, environment, public health.
-Do NOT include sports, celebrity, or entertainment news.`;
+Do NOT include sports, celebrity, or entertainment news.
+Write at a 10th grade reading level. Use short sentences and common words.`;
 
   const userPrompt = `Search for "AP News top stories ${todayISO}" and "Reuters breaking news today ${todayISO}". 
 Find the 5 most significant wire service stories published today and return them as a JSON array.`;
@@ -131,26 +130,26 @@ async function getFoxComparison(story, index) {
     `Step 2.${index + 1}: Analyzing Fox coverage of "${story.headline.substring(0, 55)}..."`
   );
 
-  const systemPrompt = `You are a media analyst specializing in cable news coverage patterns. Today is ${today}.
-Search for how Fox News covered a specific story and compare it to wire service reporting.
-Be factual and evidence-based. Do not editorialize beyond what the evidence shows.
+  const systemPrompt = `You are a media analyst who explains news coverage gaps in plain, simple language. Today is ${today}.
+Search for how Fox News covered a specific story and compare it to what actually happened according to major news sources.
+Be factual. Stick to what the evidence shows.
+Write at a 10th grade reading level. Use short sentences and everyday words.
 Return ONLY a raw JSON object (no markdown fences, no explanation):
 {
   "fox_covered": true or false,
   "fox_headline": "The headline Fox used, or null if not covered",
-  "fox_summary": "How Fox framed this story — tone, emphasis, what they highlighted. If not covered, say exactly: 'Not covered or not prominently featured.'",
-  "missing_context": [
-    "Specific fact or context present in wire reports but absent from Fox coverage",
-    "Another specific omission or misleading framing",
-    "A third specific omission — statistics, expert voices, historical context, etc."
+  "what_fox_said": "In plain language, explain how Fox covered this story — what they focused on, what angle they took. If not covered, say: 'Fox News did not cover this story or buried it.'",
+  "what_fox_missed": [
+    "A key fact that Fox left out, explained simply",
+    "Another important detail Fox didn't mention",
+    "More missing context that would change how you see this story"
   ],
-  "added_spin": "Any framing, language, or emphasis Fox added that wasn't in wire reports (or null)",
-  "analysis": "2-3 sentence analytical summary of the coverage gap and what a viewer would misunderstand",
+  "why_it_matters": "2-3 sentences explaining why these gaps matter to you as a reader. What would you misunderstand if Fox was your only news source? Be specific and direct.",
   "omission_severity": "LOW, MEDIUM, HIGH, or CRITICAL",
   "severity_score": integer from 0 to 100,
-  "severity_rationale": "One sentence explaining the severity rating"
+  "severity_rationale": "One plain sentence explaining this rating"
 }
-Severity guide: LOW = minor framing difference, MEDIUM = significant context missing, HIGH = materially misleading, CRITICAL = story ignored or severely distorted.`;
+Severity guide: LOW = small differences in wording, MEDIUM = important facts left out, HIGH = coverage is seriously misleading, CRITICAL = story ignored or twisted beyond recognition.`;
 
   const userPrompt = `Search for Fox News coverage of this story: "${story.headline}"
 Topic category: ${story.topic}
@@ -169,10 +168,9 @@ Compare Fox's coverage to what AP and Reuters reported.`;
     return {
       fox_covered: false,
       fox_headline: null,
-      fox_summary: "Analysis unavailable — could not retrieve Fox News data.",
-      missing_context: ["Unable to retrieve Fox coverage for this story."],
-      added_spin: null,
-      analysis: "Fox News coverage data was unavailable for analysis.",
+      what_fox_said: "We couldn't check Fox News coverage for this story.",
+      what_fox_missed: ["We were unable to retrieve Fox coverage for comparison."],
+      why_it_matters: "Without Fox's coverage data, we can't tell you what they left out.",
       omission_severity: "MEDIUM",
       severity_score: 50,
       severity_rationale: "Default score — analysis was unavailable.",

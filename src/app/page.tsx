@@ -42,8 +42,8 @@ export default function Home() {
             What Fox Missed
           </h1>
           <p className="text-sm text-foreground/60">
-            Daily media literacy report &mdash; comparing wire-service headlines
-            to Fox News coverage.
+            Daily media literacy report &mdash; what Fox News reported, what
+            they left out, and why it matters.
           </p>
         </header>
 
@@ -77,8 +77,8 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="mt-16 pt-6 border-t border-foreground/10 text-xs text-foreground/40">
-          Powered by Claude &amp; web search. Stories sourced from AP News and
-          Reuters wire services. Updated daily at 8 PM ET.
+          Powered by Claude &amp; web search. Stories sourced from major news
+          outlets. Updated daily at 8 PM ET.
         </footer>
       </div>
     </div>

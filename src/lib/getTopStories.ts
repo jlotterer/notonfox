@@ -9,8 +9,6 @@ export interface TopStory {
   headline: string;
   topic: string;
   summary: string;
-  ap_coverage: string;
-  reuters_coverage: string;
   significance: string;
 }
 
@@ -43,21 +41,20 @@ export async function getTopStories(): Promise<TopStory[]> {
   const todayISO = new Date().toISOString().split("T")[0];
 
   const system = `You are a journalism analyst. Today is ${today}.
-Search the web for today's top breaking news from AP News and Reuters wire services.
+Search the web for today's top breaking news from major wire services and news outlets.
 Return ONLY a raw JSON array with no markdown fences, no explanation, no preamble.
 Return exactly 5 objects with this shape:
 [
   {
     "headline": "Full descriptive headline",
     "topic": "Single keyword category (e.g. immigration, economy, ukraine, healthcare, climate)",
-    "summary": "2-3 sentence factual summary of what happened",
-    "ap_coverage": "What the AP reported specifically — key facts, quotes, framing",
-    "reuters_coverage": "What Reuters reported specifically — any differences in emphasis or detail",
-    "significance": "One sentence on why this story matters"
+    "summary": "2-3 sentence plain-language summary of what happened, written so a high school student could understand it",
+    "significance": "One sentence on why this story matters to everyday people"
   }
 ]
 Focus on major national/international stories: politics, economy, foreign policy, justice, environment, public health.
-Do NOT include sports, celebrity, or entertainment news.`;
+Do NOT include sports, celebrity, or entertainment news.
+Write at a 10th grade reading level. Use short sentences and common words.`;
 
   const messages = [
     {
